@@ -48,9 +48,11 @@ if(WIN32)
     # Determine platform for MSBuild
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(MSBUILD_PLATFORM "x64")
+        set(ICU_OUTPUT_PLATFORM "x64")
         set(ICU_LIB_DIR "lib64")
     else()
         set(MSBUILD_PLATFORM "Win32")
+        set(ICU_OUTPUT_PLATFORM "x86")  # ICU uses x86 for Win32 output
         set(ICU_LIB_DIR "lib")
     endif()
     
@@ -76,13 +78,13 @@ if(WIN32)
         INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/lib
         COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/include/unicode
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/common/${MSBUILD_PLATFORM}/Release/sicuuc.lib
+            ${ICU_SOURCE_DIR}/common/${ICU_OUTPUT_PLATFORM}/Release/sicuuc.lib
             ${ICU_INSTALL_DIR}/lib/sicuuc.lib
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/i18n/${MSBUILD_PLATFORM}/Release/sicuin.lib
+            ${ICU_SOURCE_DIR}/i18n/${ICU_OUTPUT_PLATFORM}/Release/sicuin.lib
             ${ICU_INSTALL_DIR}/lib/sicuin.lib
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/stubdata/${MSBUILD_PLATFORM}/Release/sicudt.lib
+            ${ICU_SOURCE_DIR}/stubdata/${ICU_OUTPUT_PLATFORM}/Release/sicudt.lib
             ${ICU_INSTALL_DIR}/lib/sicudt.lib
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${ICU_SOURCE_DIR}/common/unicode ${ICU_INSTALL_DIR}/include/unicode
@@ -111,6 +113,8 @@ else()
                 --prefix=${ICU_HOST_BUILD_DIR}/install
                 --enable-static
                 --disable-shared
+                "CFLAGS=-fPIC"
+                "CXXFLAGS=-fPIC"
             BUILD_COMMAND make -j${NPROC}
             INSTALL_COMMAND make install
         )
@@ -128,6 +132,8 @@ else()
                 --disable-samples
                 --with-data-packaging=static
                 --with-cross-build=${ICU_HOST_BUILD_DIR}
+                "CFLAGS=-fPIC"
+                "CXXFLAGS=-fPIC"
             BUILD_COMMAND make -j${NPROC}
             INSTALL_COMMAND make install
             BUILD_BYPRODUCTS ${ICU_LIBRARIES}
@@ -144,6 +150,8 @@ else()
                 --disable-tests
                 --disable-samples
                 --with-data-packaging=static
+                "CFLAGS=-fPIC"
+                "CXXFLAGS=-fPIC"
             BUILD_COMMAND make -j${NPROC}
             INSTALL_COMMAND make install
             BUILD_BYPRODUCTS ${ICU_LIBRARIES}
