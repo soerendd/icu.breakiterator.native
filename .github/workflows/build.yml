@@ -24,6 +24,9 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
       
+      - name: Patch ICU for static build
+        run: .\patch-icu-static.ps1
+      
       - name: Build
         run: .\build-windows.ps1 -Architecture ${{ matrix.arch }}
       
@@ -37,11 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - arch: x64
-            container: ubuntu:22.04
-          - arch: arm64
-            container: ubuntu:22.04
+        arch: [x64, arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,13 +49,13 @@ jobs:
       
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y build-essential cmake git
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git
       
       - name: Setup ARM64 cross-compilation
         if: matrix.arch == 'arm64'
         run: |
-          apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo "CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/cmake/toolchain-linux-arm64.cmake" >> $GITHUB_ENV
       
       - name: Build
@@ -134,9 +133,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      
-      - name: Patch ICU for static build
-        run: .\patch-icu-static.ps1
       
       - name: Create NuGet package
         run: .\pack-nuget-managed.ps1
