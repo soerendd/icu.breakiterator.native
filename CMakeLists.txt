@@ -109,10 +109,26 @@ else()
         ${ICU_INSTALL_DIR}/lib/libicudata.a
     )
     
-    # Check if we're cross-compiling (e.g., building ARM64 on x86_64)
-    if(CMAKE_CROSSCOMPILING OR 
-       (APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
-       (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64"))
+    # Check if we're cross-compiling
+    # - Building ARM64 on x86_64 host
+    # - Building x86_64 on ARM64 host (macOS M1/M2)
+    # - Linux ARM64 cross-compilation
+    set(IS_CROSS_COMPILING FALSE)
+    
+    if(CMAKE_CROSSCOMPILING)
+        set(IS_CROSS_COMPILING TRUE)
+    elseif(APPLE AND CMAKE_OSX_ARCHITECTURES)
+        # macOS: Check if target arch differs from host
+        if((CMAKE_OSX_ARCHITECTURES STREQUAL "arm64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
+           (CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)"))
+            set(IS_CROSS_COMPILING TRUE)
+        endif()
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        # Linux ARM64 cross-compilation
+        set(IS_CROSS_COMPILING TRUE)
+    endif()
+    
+    if(IS_CROSS_COMPILING)
         set(ICU_HOST_BUILD_DIR ${CMAKE_BINARY_DIR}/icu-host)
         
         # First, build ICU for the host architecture to get tools
@@ -130,8 +146,9 @@ else()
         )
         
         # Then build ICU for the target architecture using host tools
-        # Set cross-compilation environment variables if needed
+        # Set cross-compilation environment variables based on target platform
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+            # Linux ARM64 cross-compilation
             set(ICU_CROSS_CONFIGURE
                 ${ICU_SOURCE_DIR}/configure
                 --prefix=${ICU_INSTALL_DIR}
@@ -147,7 +164,24 @@ else()
                 "CFLAGS=-fPIC"
                 "CXXFLAGS=-fPIC"
             )
+        elseif(APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+            # macOS x86_64 (building on ARM64 host)
+            set(ICU_CROSS_CONFIGURE
+                ${ICU_SOURCE_DIR}/configure
+                --prefix=${ICU_INSTALL_DIR}
+                --host=x86_64-apple-darwin
+                --with-cross-build=${ICU_HOST_BUILD_DIR}
+                --enable-static
+                --disable-shared
+                --disable-tests
+                --disable-samples
+                --with-data-packaging=static
+                "CFLAGS=-arch x86_64 -fPIC"
+                "CXXFLAGS=-arch x86_64 -fPIC"
+                "LDFLAGS=-arch x86_64"
+            )
         else()
+            # macOS ARM64 or other cross-compilation
             set(ICU_CROSS_CONFIGURE
                 ${ICU_SOURCE_DIR}/configure
                 --prefix=${ICU_INSTALL_DIR}
