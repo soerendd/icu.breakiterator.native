@@ -2,7 +2,10 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Patching ICU project files for static library build..." -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "ICU STATIC PATCH SCRIPT STARTED" -ForegroundColor Cyan
+Write-Host "Working Directory: $(Get-Location)" -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
 
 $projectFiles = @(
     @{Path="icu\icu4c\source\common\common.vcxproj"; OldName="icuuc"; NewName="sicuuc"},
@@ -52,4 +55,6 @@ foreach ($project in $projectFiles) {
     }
 }
 
-Write-Host "ICU projects patched for static build" -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Green
+Write-Host "ICU STATIC PATCH SCRIPT COMPLETED" -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Green
