@@ -28,11 +28,11 @@ foreach ($project in $projectFiles) {
         # Change output name - handle both with and without TargetName tags
         $content = $content -replace "<TargetName>$($project.OldName)</TargetName>", "<TargetName>$($project.NewName)</TargetName>"
         
-        # If no TargetName exists, add it to each PropertyGroup with a platform condition
+        # If no TargetName exists, add it after the first PropertyGroup label
         if ($content -notmatch '<TargetName>') {
-            Write-Host "  No TargetName found, adding explicit target names..." -ForegroundColor Yellow
-            # Add TargetName to the main PropertyGroup
-            $content = $content -replace '(<PropertyGroup>(?!.*<TargetName>).*?</PropertyGroup>)', "`$1`n  <PropertyGroup>`n    <TargetName>$($project.NewName)</TargetName>`n  </PropertyGroup>"
+            Write-Host "  No TargetName found, adding to PropertyGroup..." -ForegroundColor Yellow
+            # Insert TargetName in the Configuration PropertyGroup (after ConfigurationType)
+            $content = $content -replace '(<ConfigurationType>StaticLibrary</ConfigurationType>)', "`$1`n    <TargetName>$($project.NewName)</TargetName>"
         }
         
         # Add U_STATIC_IMPLEMENTATION define to all configurations
