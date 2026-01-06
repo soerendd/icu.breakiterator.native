@@ -106,19 +106,32 @@ jobs:
       - name: Reorganize artifacts
         shell: pwsh
         run: |
+          # Show what we downloaded
+          Write-Host "=== Downloaded artifacts structure ==="
+          Get-ChildItem -Recurse build | Select-Object FullName
+          
+          # Create target directories
           New-Item -ItemType Directory -Force -Path "build/windows-x64/bin/Release"
           New-Item -ItemType Directory -Force -Path "build/windows-x86/bin/Release"
           New-Item -ItemType Directory -Force -Path "build/linux-x64/lib"
           New-Item -ItemType Directory -Force -Path "build/linux-arm64/lib"
-          New-Item -ItemType Directory -Force -Path "build/macos-x64/lib"
-          New-Item -ItemType Directory -Force -Path "build/macos-arm64/lib"
+          New-Item -ItemType Directory -Force -Path "build/osx-x64/lib"
+          New-Item -ItemType Directory -Force -Path "build/osx-arm64/lib"
           
-          Copy-Item "build/windows-x64/*.dll" "build/windows-x64/bin/Release/"
-          Copy-Item "build/windows-x86/*.dll" "build/windows-x86/bin/Release/"
-          Copy-Item "build/linux-x64/*.so" "build/linux-x64/lib/"
-          Copy-Item "build/linux-arm64/*.so" "build/linux-arm64/lib/"
-          Copy-Item "build/macos-x64/*.dylib" "build/macos-x64/lib/"
-          Copy-Item "build/macos-arm64/*.dylib" "build/macos-arm64/lib/"
+          # Copy Windows binaries
+          Copy-Item "build/windows-x64/*.dll" "build/windows-x64/bin/Release/" -Force
+          Copy-Item "build/windows-x86/*.dll" "build/windows-x86/bin/Release/" -Force
+          
+          # Copy Linux binaries
+          Copy-Item "build/linux-x64/*.so" "build/linux-x64/lib/" -Force
+          Copy-Item "build/linux-arm64/*.so" "build/linux-arm64/lib/" -Force
+          
+          # Copy macOS binaries (artifact name is macos-*, but .csproj expects osx-*)
+          Copy-Item "build/macos-x64/*.dylib" "build/osx-x64/lib/" -Force
+          Copy-Item "build/macos-arm64/*.dylib" "build/osx-arm64/lib/" -Force
+          
+          Write-Host "=== Files ready for packing ==="
+          Get-ChildItem -Recurse build/windows-x64, build/windows-x86, build/linux-x64, build/linux-arm64, build/osx-x64, build/osx-arm64 | Select-Object FullName
       
       - name: Determine version
         id: get_version
