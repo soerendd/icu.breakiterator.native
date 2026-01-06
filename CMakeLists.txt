@@ -261,10 +261,20 @@ if(WIN32)
     
 elseif(UNIX AND NOT APPLE)
     # Linux: Hide all symbols except exported ones, static libstdc++
+    target_compile_definitions(icu.breakiterator.native PRIVATE
+        U_STATIC_IMPLEMENTATION
+    )
+    
     target_link_options(icu.breakiterator.native PRIVATE 
         -Wl,--exclude-libs,ALL
         -static-libgcc
         -static-libstdc++
+    )
+    
+    # Link required system libraries for ICU
+    target_link_libraries(icu.breakiterator.native PRIVATE
+        -lpthread
+        -ldl
     )
     
 elseif(APPLE)
@@ -278,9 +288,13 @@ elseif(APPLE)
         -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/exports.txt
     )
     
-    # Link C++ standard library statically if possible
+    # Link required system frameworks and libraries for ICU
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
     target_link_libraries(icu.breakiterator.native PRIVATE
+        ${COREFOUNDATION_LIBRARY}
         -lc++
+        -lpthread
+        -ldl
     )
 endif()
 
