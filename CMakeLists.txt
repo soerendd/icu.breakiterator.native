@@ -355,8 +355,8 @@ elseif(APPLE)
     )
 endif()
 
-# Strip debug symbols on Unix platforms in release builds
-if(UNIX)
+# Strip debug symbols on Linux (macOS already strips at link time with -Wl,-S)
+if(UNIX AND NOT APPLE)
     add_custom_command(TARGET icu.breakiterator.native POST_BUILD
         COMMAND ${CMAKE_STRIP} $<TARGET_FILE:icu.breakiterator.native>
         COMMENT "Stripping debug symbols from ${PROJECT_NAME}"
