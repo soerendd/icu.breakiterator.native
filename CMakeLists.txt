@@ -77,15 +77,22 @@ if(WIN32)
             /m
         INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/lib
         COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/include/unicode
+        COMMAND ${CMAKE_COMMAND} -E echo "=== ICU Install: Looking for libraries in ${ICU_SOURCE_DIR}/common/${ICU_OUTPUT_PLATFORM}/Release/ ==="
+        COMMAND ${CMAKE_COMMAND} -E echo "Listing directory contents:"
+        COMMAND powershell -Command "if (Test-Path '${ICU_SOURCE_DIR}/common/${ICU_OUTPUT_PLATFORM}/Release') { Get-ChildItem '${ICU_SOURCE_DIR}/common/${ICU_OUTPUT_PLATFORM}/Release' | Select-Object Name } else { Write-Host 'Directory does not exist' }"
+        COMMAND ${CMAKE_COMMAND} -E echo "Attempting to copy sicuuc.lib..."
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${ICU_SOURCE_DIR}/common/${ICU_OUTPUT_PLATFORM}/Release/sicuuc.lib
             ${ICU_INSTALL_DIR}/lib/sicuuc.lib
+        COMMAND ${CMAKE_COMMAND} -E echo "Attempting to copy sicuin.lib..."
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${ICU_SOURCE_DIR}/i18n/${ICU_OUTPUT_PLATFORM}/Release/sicuin.lib
             ${ICU_INSTALL_DIR}/lib/sicuin.lib
+        COMMAND ${CMAKE_COMMAND} -E echo "Attempting to copy sicudt.lib..."
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${ICU_SOURCE_DIR}/stubdata/${ICU_OUTPUT_PLATFORM}/Release/sicudt.lib
             ${ICU_INSTALL_DIR}/lib/sicudt.lib
+        COMMAND ${CMAKE_COMMAND} -E echo "=== ICU Install: Complete ==="
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${ICU_SOURCE_DIR}/common/unicode ${ICU_INSTALL_DIR}/include/unicode
         COMMAND ${CMAKE_COMMAND} -E copy_directory
