@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>icu.breakiterator.native</id>
+    <version>1.0.0</version>
+    <authors>Your Organization</authors>
+    <owners>Your Organization</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">LICENSE</license>
+    <projectUrl>https://github.com/yourusername/icu.breakiterator.native</projectUrl>
+    <description>Native ICU break iterator library for text segmentation and line breaking across multiple platforms (Windows, Linux, macOS). Provides a minimal ICU build focused on break iterator functionality.</description>
+    <releaseNotes>Initial release with break iterator support for all major platforms.</releaseNotes>
+    <copyright>Copyright 2026</copyright>
+    <tags>icu unicode break-iterator line-breaking text-segmentation native</tags>
+    <readme>README.md</readme>
+  </metadata>
+  <files>
+    <!-- License and README -->
+    <file src="LICENSE" target="" />
+    <file src="README.md" target="" />
+    
+    <!-- Windows x64 -->
+    <file src="build/windows-x64/bin/Release/icu.breakiterator.native.dll" target="runtimes/win-x64/native/" />
+    
+    <!-- Windows x86 -->
+    <file src="build/windows-x86/bin/Release/icu.breakiterator.native.dll" target="runtimes/win-x86/native/" />
+    
+    <!-- Linux x64 -->
+    <file src="build/linux-x64/lib/libicu.breakiterator.native.so" target="runtimes/linux-x64/native/" />
+    
+    <!-- Linux ARM64 -->
+    <file src="build/linux-arm64/lib/libicu.breakiterator.native.so" target="runtimes/linux-arm64/native/" />
+    
+    <!-- macOS x64 -->
+    <file src="build/macos-x64/lib/libicu.breakiterator.native.dylib" target="runtimes/osx-x64/native/" />
+    
+    <!-- macOS ARM64 (Apple Silicon) -->
+    <file src="build/macos-arm64/lib/libicu.breakiterator.native.dylib" target="runtimes/osx-arm64/native/" />
+  </files>
+</package>

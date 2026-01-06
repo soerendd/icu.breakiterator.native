@@ -1,0 +1,9 @@
+LIBRARY icu.breakiterator.native
+EXPORTS
+    icu_breakiterator_create_line
+    icu_breakiterator_set_text
+    icu_breakiterator_next
+    icu_breakiterator_previous
+    icu_breakiterator_first
+    icu_breakiterator_destroy
+    icu_get_version

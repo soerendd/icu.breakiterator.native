@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- NuGet Package Properties -->
+    <PackageId>IcuBreakIterator.Native</PackageId>
+    <Version>78.1.0</Version>
+    <Authors>Your Name</Authors>
+    <Company>Your Company</Company>
+    <Description>.NET wrapper for ICU BreakIterator with self-contained native libraries. Provides Unicode-aware text segmentation for line breaking, word breaking, and sentence breaking.</Description>
+    <PackageTags>icu;breakiterator;unicode;text;segmentation;linebreak;wordbreak;i18n</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/yourusername/icu.breakiterator.native</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yourusername/icu.breakiterator.native</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial release with ICU 78.1 static linking</PackageReleaseNotes>
+    
+    <!-- Include native libraries in package -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for Windows x64 -->
+  <ItemGroup>
+    <None Include="..\..\build\windows-x64\bin\Release\icu.breakiterator.native.dll"
+          Condition="Exists('..\..\build\windows-x64\bin\Release\icu.breakiterator.native.dll')"
+          Pack="true"
+          PackagePath="runtimes\win-x64\native\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for Windows x86 -->
+  <ItemGroup>
+    <None Include="..\..\build\windows-x86\bin\Release\icu.breakiterator.native.dll"
+          Condition="Exists('..\..\build\windows-x86\bin\Release\icu.breakiterator.native.dll')"
+          Pack="true"
+          PackagePath="runtimes\win-x86\native\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for Linux x64 -->
+  <ItemGroup>
+    <None Include="..\..\build\linux-x64\lib\libicu.breakiterator.native.so"
+          Condition="Exists('..\..\build\linux-x64\lib\libicu.breakiterator.native.so')"
+          Pack="true"
+          PackagePath="runtimes\linux-x64\native\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for Linux ARM64 -->
+  <ItemGroup>
+    <None Include="..\..\build\linux-arm64\lib\libicu.breakiterator.native.so"
+          Condition="Exists('..\..\build\linux-arm64\lib\libicu.breakiterator.native.so')"
+          Pack="true"
+          PackagePath="runtimes\linux-arm64\native\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for macOS x64 -->
+  <ItemGroup>
+    <None Include="..\..\build\osx-x64\lib\libicu.breakiterator.native.dylib"
+          Condition="Exists('..\..\build\osx-x64\lib\libicu.breakiterator.native.dylib')"
+          Pack="true"
+          PackagePath="runtimes\osx-x64\native\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for macOS ARM64 -->
+  <ItemGroup>
+    <None Include="..\..\build\osx-arm64\lib\libicu.breakiterator.native.dylib"
+          Condition="Exists('..\..\build\osx-arm64\lib\libicu.breakiterator.native.dylib')"
+          Pack="true"
+          PackagePath="runtimes\osx-arm64\native\" />
+  </ItemGroup>
+
+</Project>

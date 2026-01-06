@@ -1,0 +1,7 @@
+_icu_breakiterator_create_line
+_icu_breakiterator_set_text
+_icu_breakiterator_next
+_icu_breakiterator_previous
+_icu_breakiterator_first
+_icu_breakiterator_destroy
+_icu_get_version

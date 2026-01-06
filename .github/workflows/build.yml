@@ -1,0 +1,153 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+      
+      - name: Build
+        run: .\build-windows.ps1 -Architecture ${{ matrix.arch }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: build/windows-${{ matrix.arch }}/bin/Release/*.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            container: ubuntu:22.04
+          - arch: arm64
+            container: ubuntu:22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential cmake git
+      
+      - name: Setup ARM64 cross-compilation
+        if: matrix.arch == 'arm64'
+        run: |
+          apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          echo "CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/cmake/toolchain-linux-arm64.cmake" >> $GITHUB_ENV
+      
+      - name: Build
+        run: |
+          chmod +x build-linux.sh
+          ./build-linux.sh ${{ matrix.arch }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: build/linux-${{ matrix.arch }}/lib/*.so
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+      
+      - name: Build
+        run: |
+          chmod +x build-macos.sh
+          ./build-macos.sh ${{ matrix.arch }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: build/macos-${{ matrix.arch }}/lib/*.dylib
+
+  create-nuget:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+      
+      - name: Reorganize artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "build/windows-x64/bin/Release"
+          New-Item -ItemType Directory -Force -Path "build/windows-x86/bin/Release"
+          New-Item -ItemType Directory -Force -Path "build/linux-x64/lib"
+          New-Item -ItemType Directory -Force -Path "build/linux-arm64/lib"
+          New-Item -ItemType Directory -Force -Path "build/macos-x64/lib"
+          New-Item -ItemType Directory -Force -Path "build/macos-arm64/lib"
+          
+          Copy-Item "build/windows-x64/*.dll" "build/windows-x64/bin/Release/"
+          Copy-Item "build/windows-x86/*.dll" "build/windows-x86/bin/Release/"
+          Copy-Item "build/linux-x64/*.so" "build/linux-x64/lib/"
+          Copy-Item "build/linux-arm64/*.so" "build/linux-arm64/lib/"
+          Copy-Item "build/macos-x64/*.dylib" "build/macos-x64/lib/"
+          Copy-Item "build/macos-arm64/*.dylib" "build/macos-arm64/lib/"
+      
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Patch ICU for static build
+        run: .\patch-icu-static.ps1
+      
+      - name: Create NuGet package
+        run: .\pack-nuget-managed.ps1
+      
+      - name: Publish to NuGet
+        run: |
+          dotnet nuget push packages/IcuBreakIterator.Native.${{ steps.get_version.outputs.VERSION }}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: packages/IcuBreakIterator.Native.${{ steps.get_version.outputs.VERSION }}.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
