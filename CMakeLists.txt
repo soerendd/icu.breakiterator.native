@@ -66,6 +66,7 @@ if(WIN32)
     ExternalProject_Add(icu_external
         SOURCE_DIR ${ICU_SOURCE_DIR}
         BINARY_DIR ${ICU_BUILD_DIR}
+        PATCH_COMMAND powershell -ExecutionPolicy Bypass -File ${CMAKE_CURRENT_SOURCE_DIR}/patch-icu-static.ps1
         CONFIGURE_COMMAND ""
         BUILD_COMMAND msbuild ${ICU_SOURCE_DIR}/allinone/allinone.sln
             /p:Configuration=Release
