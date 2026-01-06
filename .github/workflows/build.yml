@@ -24,9 +24,6 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
       
-      - name: Patch ICU for static build
-        run: .\patch-icu-static.ps1
-      
       - name: Build
         run: .\build-windows.ps1 -Architecture ${{ matrix.arch }}
       
