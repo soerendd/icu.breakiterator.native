@@ -5,35 +5,50 @@ $ErrorActionPreference = "Stop"
 Write-Host "Patching ICU project files for static library build..." -ForegroundColor Cyan
 
 $projectFiles = @(
-    "icu\icu4c\source\common\common.vcxproj",
-    "icu\icu4c\source\i18n\i18n.vcxproj",
-    "icu\icu4c\source\stubdata\stubdata.vcxproj"
+    @{Path="icu\icu4c\source\common\common.vcxproj"; OldName="icuuc"; NewName="sicuuc"},
+    @{Path="icu\icu4c\source\i18n\i18n.vcxproj"; OldName="icuin"; NewName="sicuin"},
+    @{Path="icu\icu4c\source\stubdata\stubdata.vcxproj"; OldName="icudt"; NewName="sicudt"}
 )
 
 foreach ($project in $projectFiles) {
-    if (Test-Path $project) {
-        Write-Host "Patching $project..." -ForegroundColor Yellow
+    $projectPath = $project.Path
+    
+    if (Test-Path $projectPath) {
+        Write-Host "Patching $projectPath..." -ForegroundColor Yellow
         
-        $content = Get-Content $project -Raw
+        $content = Get-Content $projectPath -Raw
+        $originalContent = $content
         
         # Change DynamicLibrary to StaticLibrary
         $content = $content -replace '<ConfigurationType>DynamicLibrary</ConfigurationType>', '<ConfigurationType>StaticLibrary</ConfigurationType>'
         
-        # Change output names to include 's' prefix for static
-        $content = $content -replace '<TargetName>icuuc</TargetName>', '<TargetName>sicuuc</TargetName>'
-        $content = $content -replace '<TargetName>icuin</TargetName>', '<TargetName>sicuin</TargetName>'
-        $content = $content -replace '<TargetName>icudt</TargetName>', '<TargetName>sicudt</TargetName>'
+        # Change output name - handle both with and without TargetName tags
+        $content = $content -replace "<TargetName>$($project.OldName)</TargetName>", "<TargetName>$($project.NewName)</TargetName>"
         
-        # Add U_STATIC_IMPLEMENTATION define
-        $content = $content -replace '(<PreprocessorDefinitions>)', '$1U_STATIC_IMPLEMENTATION;'
+        # If no TargetName exists, add it to each PropertyGroup with a platform condition
+        if ($content -notmatch '<TargetName>') {
+            Write-Host "  No TargetName found, adding explicit target names..." -ForegroundColor Yellow
+            # Add TargetName to the main PropertyGroup
+            $content = $content -replace '(<PropertyGroup>(?!.*<TargetName>).*?</PropertyGroup>)', "`$1`n  <PropertyGroup>`n    <TargetName>$($project.NewName)</TargetName>`n  </PropertyGroup>"
+        }
+        
+        # Add U_STATIC_IMPLEMENTATION define to all configurations
+        $content = $content -replace '(<PreprocessorDefinitions>(?!.*U_STATIC_IMPLEMENTATION))', '$1U_STATIC_IMPLEMENTATION;'
         
         # Change runtime library from /MD to /MT (static CRT)
         $content = $content -replace '<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>', '<RuntimeLibrary>MultiThreaded</RuntimeLibrary>'
         $content = $content -replace '<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>', '<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>'
         
-        Set-Content -Path $project -Value $content
+        # Verify changes were made
+        if ($content -eq $originalContent) {
+            Write-Host "  WARNING: No changes detected in $projectPath" -ForegroundColor Red
+        }
         
-        Write-Host "  Patched successfully" -ForegroundColor Green
+        Set-Content -Path $projectPath -Value $content -Encoding UTF8
+        
+        Write-Host "  Patched successfully (ConfigType: Static, TargetName: $($project.NewName))" -ForegroundColor Green
+    } else {
+        Write-Host "  WARNING: Project file not found: $projectPath" -ForegroundColor Red
     }
 }
 

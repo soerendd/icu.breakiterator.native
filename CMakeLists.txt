@@ -101,8 +101,10 @@ else()
         ${ICU_INSTALL_DIR}/lib/libicudata.a
     )
     
-    # Check if we're cross-compiling (e.g., building ARM64 on x86_64 macOS)
-    if(CMAKE_CROSSCOMPILING OR (APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64"))
+    # Check if we're cross-compiling (e.g., building ARM64 on x86_64)
+    if(CMAKE_CROSSCOMPILING OR 
+       (APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
+       (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64"))
         set(ICU_HOST_BUILD_DIR ${CMAKE_BINARY_DIR}/icu-host)
         
         # First, build ICU for the host architecture to get tools
@@ -120,11 +122,26 @@ else()
         )
         
         # Then build ICU for the target architecture using host tools
-        ExternalProject_Add(icu_external
-            DEPENDS icu_host
-            SOURCE_DIR ${ICU_SOURCE_DIR}
-            BINARY_DIR ${ICU_BUILD_DIR}
-            CONFIGURE_COMMAND ${ICU_SOURCE_DIR}/configure
+        # Set cross-compilation environment variables if needed
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+            set(ICU_CROSS_CONFIGURE
+                ${ICU_SOURCE_DIR}/configure
+                --prefix=${ICU_INSTALL_DIR}
+                --host=aarch64-linux-gnu
+                --with-cross-build=${ICU_HOST_BUILD_DIR}
+                --enable-static
+                --disable-shared
+                --disable-tests
+                --disable-samples
+                --with-data-packaging=static
+                "CC=aarch64-linux-gnu-gcc"
+                "CXX=aarch64-linux-gnu-g++"
+                "CFLAGS=-fPIC"
+                "CXXFLAGS=-fPIC"
+            )
+        else()
+            set(ICU_CROSS_CONFIGURE
+                ${ICU_SOURCE_DIR}/configure
                 --prefix=${ICU_INSTALL_DIR}
                 --enable-static
                 --disable-shared
@@ -134,6 +151,14 @@ else()
                 --with-cross-build=${ICU_HOST_BUILD_DIR}
                 "CFLAGS=-fPIC"
                 "CXXFLAGS=-fPIC"
+            )
+        endif()
+        
+        ExternalProject_Add(icu_external
+            DEPENDS icu_host
+            SOURCE_DIR ${ICU_SOURCE_DIR}
+            BINARY_DIR ${ICU_BUILD_DIR}
+            CONFIGURE_COMMAND ${ICU_CROSS_CONFIGURE}
             BUILD_COMMAND make -j${NPROC}
             INSTALL_COMMAND make install
             BUILD_BYPRODUCTS ${ICU_LIBRARIES}
@@ -198,6 +223,13 @@ set_target_properties(icu.breakiterator.native PROPERTIES
     VISIBILITY_INLINES_HIDDEN ON
 )
 
+# On macOS, ensure the library is built for the correct architecture
+if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+    set_target_properties(icu.breakiterator.native PROPERTIES
+        OSX_ARCHITECTURES "${CMAKE_OSX_ARCHITECTURES}"
+    )
+endif()
+
 # Install header for consumers
 install(FILES include/icu_breakiterator_wrapper.h DESTINATION include)
 
@@ -230,9 +262,18 @@ elseif(UNIX AND NOT APPLE)
     
 elseif(APPLE)
     # macOS: Hide symbols and use static libc++
+    target_compile_definitions(icu.breakiterator.native PRIVATE
+        U_STATIC_IMPLEMENTATION
+    )
+    
     target_link_options(icu.breakiterator.native PRIVATE
         -Wl,-dead_strip
         -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/exports.txt
+    )
+    
+    # Link C++ standard library statically if possible
+    target_link_libraries(icu.breakiterator.native PRIVATE
+        -lc++
     )
 endif()
 
