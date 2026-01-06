@@ -76,13 +76,13 @@ if(WIN32)
         INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/lib
         COMMAND ${CMAKE_COMMAND} -E make_directory ${ICU_INSTALL_DIR}/include/unicode
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/common/${MSBUILD_PLATFORM}/Release/common.lib
+            ${ICU_SOURCE_DIR}/common/${MSBUILD_PLATFORM}/Release/sicuuc.lib
             ${ICU_INSTALL_DIR}/lib/sicuuc.lib
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/i18n/${MSBUILD_PLATFORM}/Release/i18n.lib
+            ${ICU_SOURCE_DIR}/i18n/${MSBUILD_PLATFORM}/Release/sicuin.lib
             ${ICU_INSTALL_DIR}/lib/sicuin.lib
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ICU_SOURCE_DIR}/stubdata/${MSBUILD_PLATFORM}/Release/stubdata.lib
+            ${ICU_SOURCE_DIR}/stubdata/${MSBUILD_PLATFORM}/Release/sicudt.lib
             ${ICU_INSTALL_DIR}/lib/sicudt.lib
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${ICU_SOURCE_DIR}/common/unicode ${ICU_INSTALL_DIR}/include/unicode
@@ -99,21 +99,56 @@ else()
         ${ICU_INSTALL_DIR}/lib/libicudata.a
     )
     
-    ExternalProject_Add(icu_external
-        SOURCE_DIR ${ICU_SOURCE_DIR}
-        BINARY_DIR ${ICU_BUILD_DIR}
-        CONFIGURE_COMMAND ${ICU_SOURCE_DIR}/configure
-            --prefix=${ICU_INSTALL_DIR}
-            --enable-static
-            --disable-shared
-            --disable-tools
-            --disable-tests
-            --disable-samples
-            --with-data-packaging=static
-        BUILD_COMMAND make -j${NPROC}
-        INSTALL_COMMAND make install
-        BUILD_BYPRODUCTS ${ICU_LIBRARIES}
-    )
+    # Check if we're cross-compiling (e.g., building ARM64 on x86_64 macOS)
+    if(CMAKE_CROSSCOMPILING OR (APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64"))
+        set(ICU_HOST_BUILD_DIR ${CMAKE_BINARY_DIR}/icu-host)
+        
+        # First, build ICU for the host architecture to get tools
+        ExternalProject_Add(icu_host
+            SOURCE_DIR ${ICU_SOURCE_DIR}
+            BINARY_DIR ${ICU_HOST_BUILD_DIR}
+            CONFIGURE_COMMAND ${ICU_SOURCE_DIR}/configure
+                --prefix=${ICU_HOST_BUILD_DIR}/install
+                --enable-static
+                --disable-shared
+            BUILD_COMMAND make -j${NPROC}
+            INSTALL_COMMAND make install
+        )
+        
+        # Then build ICU for the target architecture using host tools
+        ExternalProject_Add(icu_external
+            DEPENDS icu_host
+            SOURCE_DIR ${ICU_SOURCE_DIR}
+            BINARY_DIR ${ICU_BUILD_DIR}
+            CONFIGURE_COMMAND ${ICU_SOURCE_DIR}/configure
+                --prefix=${ICU_INSTALL_DIR}
+                --enable-static
+                --disable-shared
+                --disable-tests
+                --disable-samples
+                --with-data-packaging=static
+                --with-cross-build=${ICU_HOST_BUILD_DIR}
+            BUILD_COMMAND make -j${NPROC}
+            INSTALL_COMMAND make install
+            BUILD_BYPRODUCTS ${ICU_LIBRARIES}
+        )
+    else()
+        # Native build - no cross-compilation needed
+        ExternalProject_Add(icu_external
+            SOURCE_DIR ${ICU_SOURCE_DIR}
+            BINARY_DIR ${ICU_BUILD_DIR}
+            CONFIGURE_COMMAND ${ICU_SOURCE_DIR}/configure
+                --prefix=${ICU_INSTALL_DIR}
+                --enable-static
+                --disable-shared
+                --disable-tests
+                --disable-samples
+                --with-data-packaging=static
+            BUILD_COMMAND make -j${NPROC}
+            INSTALL_COMMAND make install
+            BUILD_BYPRODUCTS ${ICU_LIBRARIES}
+        )
+    endif()
 endif()
 
 # Define our wrapper library as SHARED (but with ICU statically linked inside)
