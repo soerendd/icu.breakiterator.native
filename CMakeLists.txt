@@ -322,6 +322,7 @@ elseif(UNIX AND NOT APPLE)
     
     target_link_options(icu.breakiterator.native PRIVATE 
         -Wl,--exclude-libs,ALL
+        -Wl,--strip-all
         -static-libgcc
         -static-libstdc++
     )
@@ -341,6 +342,7 @@ elseif(APPLE)
     target_link_options(icu.breakiterator.native PRIVATE
         -Wl,-dead_strip
         -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/exports.txt
+        -Wl,-S
     )
     
     # Link required system frameworks and libraries for ICU
@@ -350,6 +352,14 @@ elseif(APPLE)
         -lc++
         -lpthread
         -ldl
+    )
+endif()
+
+# Strip debug symbols on Unix platforms in release builds
+if(UNIX)
+    add_custom_command(TARGET icu.breakiterator.native POST_BUILD
+        COMMAND ${CMAKE_STRIP} $<TARGET_FILE:icu.breakiterator.native>
+        COMMENT "Stripping debug symbols from ${PROJECT_NAME}"
     )
 endif()
 
