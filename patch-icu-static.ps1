@@ -8,9 +8,9 @@ Write-Host "Working Directory: $(Get-Location)" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 
 $projectFiles = @(
-    @{Path="icu\icu4c\source\common\common.vcxproj"; OldName="icuuc"; NewName="sicuuc"},
-    @{Path="icu\icu4c\source\i18n\i18n.vcxproj"; OldName="icuin"; NewName="sicuin"},
-    @{Path="icu\icu4c\source\stubdata\stubdata.vcxproj"; OldName="icudt"; NewName="sicudt"}
+    @{Path="common\common.vcxproj"; OldName="icuuc"; NewName="sicuuc"},
+    @{Path="i18n\i18n.vcxproj"; OldName="icuin"; NewName="sicuin"},
+    @{Path="stubdata\stubdata.vcxproj"; OldName="icudt"; NewName="sicudt"}
 )
 
 foreach ($project in $projectFiles) {
